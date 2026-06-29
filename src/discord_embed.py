@@ -2,7 +2,9 @@ import requests
 from datetime import datetime
 
 
-def send_report(webhook_url, culture_data, folkways, instruments, artists, artworks, songs):
+def send_report(
+    webhook_url, culture_data, folkways, instruments, artists, artworks, songs
+):
     today = datetime.now().strftime("%d/%m/%Y")
     culture_name = culture_data["name"]
     country = culture_data["country"]
@@ -10,15 +12,17 @@ def send_report(webhook_url, culture_data, folkways, instruments, artists, artwo
 
     embeds = []
 
-    embeds.append({
-        "title": f"🌍 {culture_name} — Khám phá văn hóa hôm nay",
-        "color": 0x2ECC71,
-        "description": (
-            f"**Quốc gia:** {country}  ·  **Khu vực:** {region}\n\n"
-            f"Mỗi ngày một nền văn hóa — âm nhạc, nghệ thuật và di sản từ khắp thế giới."
-        ),
-        "footer": {"text": f"Culture Discovery Bot — {today}"},
-    })
+    embeds.append(
+        {
+            "title": f"🌍 {culture_name} — Khám phá văn hóa hôm nay",
+            "color": 0x2ECC71,
+            "description": (
+                f"**Quốc gia:** {country}  ·  **Khu vực:** {region}\n\n"
+                f"Mỗi ngày một nền văn hóa — âm nhạc, nghệ thuật và di sản từ khắp thế giới."
+            ),
+            "footer": {"text": f"Culture Discovery Bot — {today}"},
+        }
+    )
 
     smithsonian_embed = _build_folkways_embed(folkways, culture_name, today)
     if smithsonian_embed:
@@ -56,13 +60,23 @@ def _build_folkways_embed(folkways, culture_name, today):
         return None
     fw = folkways[0]
     fields = []
-    fields.append({"name": "📀 Tiêu đề", "value": _truncate(fw.get("title", "—"), 240), "inline": False})
+    fields.append(
+        {
+            "name": "📀 Tiêu đề",
+            "value": _truncate(fw.get("title", "—"), 240),
+            "inline": False,
+        }
+    )
     if fw.get("culture"):
         fields.append({"name": "Văn hóa", "value": fw["culture"], "inline": True})
     if fw.get("topic"):
-        fields.append({"name": "Chủ đề", "value": _truncate(fw["topic"], 240), "inline": True})
+        fields.append(
+            {"name": "Chủ đề", "value": _truncate(fw["topic"], 240), "inline": True}
+        )
     if fw.get("description"):
-        fields.append({"name": "Mô tả", "value": _truncate(fw["description"]), "inline": False})
+        fields.append(
+            {"name": "Mô tả", "value": _truncate(fw["description"]), "inline": False}
+        )
 
     extra = []
     if fw.get("media_url"):
@@ -73,7 +87,9 @@ def _build_folkways_embed(folkways, culture_name, today):
     return {
         "title": f"🎵 Smithsonian Folkways — {culture_name}",
         "color": 0xE67E22,
-        "description": f"Bản ghi âm thực địa từ kho tàng Folkways của Smithsonian:\n\n{desc}\n\n{'  ·  '.join(extra) if extra else ''}" if desc else f"{'  ·  '.join(extra) if extra else ''}",
+        "description": f"Bản ghi âm thực địa từ kho tàng Folkways của Smithsonian:\n\n{desc}\n\n{'  ·  '.join(extra) if extra else ''}"
+        if desc
+        else f"{'  ·  '.join(extra) if extra else ''}",
         "fields": fields,
         "footer": {"text": f"Smithsonian Open Access — {today}"},
     }
@@ -88,9 +104,15 @@ def _build_musicbrainz_embed(instruments, artists, culture_name, today):
             if inst.get("description"):
                 line += f" — {_truncate(inst['description'], 100)}"
             inst_lines.append(line)
-        fields.append({"name": f"🎸 Nhạc cụ truyền thống ({len(instruments)} tìm thấy)",
-                        "value": "\n".join(inst_lines[:5]) if inst_lines else "Không có dữ liệu",
-                        "inline": False})
+        fields.append(
+            {
+                "name": f"🎸 Nhạc cụ truyền thống ({len(instruments)} tìm thấy)",
+                "value": "\n".join(inst_lines[:5])
+                if inst_lines
+                else "Không có dữ liệu",
+                "inline": False,
+            }
+        )
 
     if artists:
         art_lines = []
@@ -99,9 +121,13 @@ def _build_musicbrainz_embed(instruments, artists, culture_name, today):
             if a.get("begin"):
                 line += f" — thành lập {a['begin']}"
             art_lines.append(line)
-        fields.append({"name": f"🎤 Nghệ sĩ tiêu biểu",
-                        "value": "\n".join(art_lines) if art_lines else "Không có dữ liệu",
-                        "inline": False})
+        fields.append(
+            {
+                "name": f"🎤 Nghệ sĩ tiêu biểu",
+                "value": "\n".join(art_lines) if art_lines else "Không có dữ liệu",
+                "inline": False,
+            }
+        )
 
     if not fields:
         return None
@@ -118,22 +144,38 @@ def _build_met_embed(artworks, culture_name, today):
         return None
     art = artworks[0]
     fields = []
-    fields.append({"name": "🖼 Tác phẩm", "value": _truncate(art.get("title", "—"), 240), "inline": False})
+    fields.append(
+        {
+            "name": "🖼 Tác phẩm",
+            "value": _truncate(art.get("title", "—"), 240),
+            "inline": False,
+        }
+    )
     if art.get("artist"):
-        fields.append({"name": "Tác giả", "value": _truncate(art["artist"], 240), "inline": True})
+        fields.append(
+            {"name": "Tác giả", "value": _truncate(art["artist"], 240), "inline": True}
+        )
     if art.get("date"):
         fields.append({"name": "Niên đại", "value": art["date"], "inline": True})
     if art.get("medium"):
-        fields.append({"name": "Chất liệu", "value": _truncate(art["medium"], 240), "inline": False})
+        fields.append(
+            {
+                "name": "Chất liệu",
+                "value": _truncate(art["medium"], 240),
+                "inline": False,
+            }
+        )
     if art.get("department"):
-        fields.append({"name": "Phòng trưng bày", "value": art["department"], "inline": True})
+        fields.append(
+            {"name": "Phòng trưng bày", "value": art["department"], "inline": True}
+        )
 
     embed = {
         "title": f"🎨 {art.get('title', 'Tác phẩm nghệ thuật')}",
         "color": 0x9B59B6,
         "fields": fields,
         "url": art.get("url", ""),
-        "footer": {"text": f"The Metropolitan Museum of Art — {today}"},
+        "footer": {"text": f"Art Institute of Chicago — {today}"},
     }
     if art.get("image"):
         embed["image"] = {"url": art["image"]}
@@ -145,10 +187,14 @@ def _build_genius_embed(songs, culture_name, today):
         return None
     song = songs[0]
     fields = []
-    fields.append({"name": "🎤 Bài hát", "value": song.get("title", "—"), "inline": False})
+    fields.append(
+        {"name": "🎤 Bài hát", "value": song.get("title", "—"), "inline": False}
+    )
     fields.append({"name": "Nghệ sĩ", "value": song.get("artist", "—"), "inline": True})
     if song.get("release_date"):
-        fields.append({"name": "Phát hành", "value": song["release_date"], "inline": True})
+        fields.append(
+            {"name": "Phát hành", "value": song["release_date"], "inline": True}
+        )
 
     return {
         "title": f"📝 Genius — {song.get('title', 'Bài hát')}",

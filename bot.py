@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from src.cultures import CULTURES
 from src.smithsonian import search_folkways
 from src.musicbrainz import get_folk_instruments, search_artist
-from src.met_museum import search_art
+from src.art import search_art
 from src.genius import search_song
 from src.discord_embed import send_report
 
@@ -23,7 +23,11 @@ log = logging.getLogger(__name__)
 def find_culture(query):
     query_lower = query.lower().strip()
     for c in CULTURES:
-        if query_lower == c["slug"] or query_lower == c["country"].lower() or query_lower == c["name"].lower():
+        if (
+            query_lower == c["slug"]
+            or query_lower == c["country"].lower()
+            or query_lower == c["name"].lower()
+        ):
             return c
     for c in CULTURES:
         if query_lower in c["country"].lower() or query_lower in c["name"].lower():
@@ -50,18 +54,14 @@ def search(culture, smithsonian_key, genius_token):
     except Exception as e:
         log.warning("  MusicBrainz error: %s", e)
 
-    log.info("[3/4] Met Museum...")
+    log.info("[3/4] Art Institute of Chicago...")
     artworks, art_total = [], 0
     try:
-        for term in culture["search_terms"]:
-            artworks, art_total = search_art(term)
-            if artworks:
-                break
-        if not artworks:
-            artworks, art_total = search_art(culture["region"])
-        log.info("  → %d tác phẩm (tổng %d)", len(artworks), art_total)
+        keywords = culture["search_terms"] + [culture["country"]]
+        artworks, art_total = search_art(culture["country"], keywords=keywords)
+        log.info("  → %d tác phẩm KHỚP văn hóa (tổng tìm %d)", len(artworks), art_total)
     except Exception as e:
-        log.warning("  Met Museum error: %s", e)
+        log.warning("  Art error: %s", e)
 
     log.info("[4/4] Genius...")
     songs = []
@@ -107,7 +107,7 @@ def print_report(culture, folkways, instruments, artists, artworks, songs):
 
     if artworks:
         art = artworks[0]
-        print(f"  🎨  Met Museum: {art['title']}")
+        print(f"  🎨  Art (AIC): {art['title']}")
         print(f"      Tác giả: {art['artist']}  ·  {art['date']}")
         if art.get("image"):
             print(f"      Ảnh: {art['image']}")
@@ -123,16 +123,25 @@ def print_report(culture, folkways, instruments, artists, artworks, songs):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Culture Discovery Bot — 4 API kết hợp")
+    parser = argparse.ArgumentParser(
+        description="Culture Discovery Bot — 4 API kết hợp"
+    )
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("country", nargs="?", default=None,
-                       help="Tên quốc gia hoặc văn hóa (vd: vietnam, japan, india)")
-    group.add_argument("--random", "-r", action="store_true",
-                       help="Chọn ngẫu nhiên một nền văn hóa")
-    group.add_argument("--list", "-l", action="store_true",
-                       help="Danh sách các nền văn hóa có sẵn")
-    parser.add_argument("--print", "-p", action="store_true",
-                       help="In ra terminal thay vì gửi Discord")
+    group.add_argument(
+        "country",
+        nargs="?",
+        default=None,
+        help="Tên quốc gia hoặc văn hóa (vd: vietnam, japan, india)",
+    )
+    group.add_argument(
+        "--random", "-r", action="store_true", help="Chọn ngẫu nhiên một nền văn hóa"
+    )
+    group.add_argument(
+        "--list", "-l", action="store_true", help="Danh sách các nền văn hóa có sẵn"
+    )
+    parser.add_argument(
+        "--print", "-p", action="store_true", help="In ra terminal thay vì gửi Discord"
+    )
 
     args = parser.parse_args()
 
@@ -149,7 +158,9 @@ def main():
 
     smithsonian_key = os.environ.get("SMITHSONIAN_API_KEY") or "DEMO_KEY"
     genius_token = os.environ.get("GENIUS_ACCESS_TOKEN", "")
-    webhook = os.environ.get("DISCORD_WEBHOOK_URL", os.environ.get("DISCORD_WEBHOOK_LUNAR", ""))
+    webhook = os.environ.get(
+        "DISCORD_WEBHOOK_URL", os.environ.get("DISCORD_WEBHOOK_LUNAR", "")
+    )
 
     if args.country:
         culture = find_culture(args.country)
@@ -163,14 +174,18 @@ def main():
         culture = rng.choice(CULTURES)
 
     log.info("🌍  %s (%s)", culture["name"], culture["country"])
-    folkways, instruments, artists, artworks, songs = search(culture, smithsonian_key, genius_token)
+    folkways, instruments, artists, artworks, songs = search(
+        culture, smithsonian_key, genius_token
+    )
 
     if args.print or not webhook:
         print_report(culture, folkways, instruments, artists, artworks, songs)
     else:
         log.info("Gửi Discord...")
         try:
-            send_report(webhook, culture, folkways, instruments, artists, artworks, songs)
+            send_report(
+                webhook, culture, folkways, instruments, artists, artworks, songs
+            )
             log.info("✓ Đã gửi thành công!")
         except Exception as e:
             log.error("Discord error: %s", e)
